@@ -1,6 +1,17 @@
 Vagrant.configure("2") do |config|
   # Configuración de la red privada para que las máquinas se puedan comunicar entre ellas
   config.vm.network "private_network", type: "dhcp"
+
+    # Máquina virtual para Redis (Log Message Processor depende de Redis)
+    config.vm.define "redis" do |redis|
+      redis.vm.box = "ubuntu/bionic64"
+      redis.vm.hostname = "redis"
+      redis.vm.network "private_network", ip: "192.168.50.5"
+      redis.vm.provision "docker"
+      redis.vm.provision "shell", inline: <<-SHELL
+        docker run -d --name redis -p 6379:6379 redis:7.0
+      SHELL
+    end
   
   # Máquina virtual para el Auth API
   config.vm.define "auth-api" do |auth|
@@ -80,17 +91,6 @@ Vagrant.configure("2") do |config|
         -e AUTH_API_ADDRESS=http://192.168.50.2:8000 \
         -e TODOS_API_ADDRESS=http://192.168.50.6:8082 \
         jorgeeduardo24/frontend-image:0.1.0
-    SHELL
-  end
-
-  # Máquina virtual para Redis (Log Message Processor depende de Redis)
-  config.vm.define "redis" do |redis|
-    redis.vm.box = "ubuntu/bionic64"
-    redis.vm.hostname = "redis"
-    redis.vm.network "private_network", ip: "192.168.50.5"
-    redis.vm.provision "docker"
-    redis.vm.provision "shell", inline: <<-SHELL
-      docker run -d --name redis -p 6379:6379 redis:7.0
     SHELL
   end
 end
